@@ -36,59 +36,59 @@ let package = Package(
     .binaryTarget(
       name: "MLImage",
       url: "https://github.com/zaicodev/google-mlkit-swiftpm/releases/download/v6.0.0/MLImage.xcframework.zip",
-      checksum: "a5b044938a738f1be68b796a6246a1f951a2851b0fa2bbd76ec4d207e1ad4bda"),
+      checksum: "ba2bd6c83ea242d202629f712df8b28dcfab05247fe141c5e72fba1cd45bdab3"),
     .binaryTarget(
       name: "MLKitBarcodeScanning",
       url: "https://github.com/zaicodev/google-mlkit-swiftpm/releases/download/v6.0.0/MLKitBarcodeScanning.xcframework.zip",
-      checksum: "35128bce90ae855cecc48847f2b0f60d80464191f17841f0973b90f954ccb951"),
+      checksum: "fce1aeab0b73bccf625bae9f11417f24c5873590581027a1b34594e30468e39c"),
     .binaryTarget(
       name: "MLKitCommon",
       url: "https://github.com/zaicodev/google-mlkit-swiftpm/releases/download/v6.0.0/MLKitCommon.xcframework.zip",
-      checksum: "3fc2e551136519c872af87d6bf983d22c36c851f101d4291534e839e9c067018"),
+      checksum: "2311f378725ecd8cdbb2b5f574cd314eb9f7a80b1dd882433853ea413fd630dc"),
     .binaryTarget(
       name: "MLKitFaceDetection",
       url: "https://github.com/zaicodev/google-mlkit-swiftpm/releases/download/v6.0.0/MLKitFaceDetection.xcframework.zip",
-      checksum: "f88a7f79e685b09b84f8b37edba2e2dfcd8dc8495e3205109ad5aa7fba851327"),
+      checksum: "44f1b78489dfd82d09c9356c6dc90dc538b62795892a01820c38dde90bb28f83"),
     .binaryTarget(
       name: "MLKitVision",
       url: "https://github.com/zaicodev/google-mlkit-swiftpm/releases/download/v6.0.0/MLKitVision.xcframework.zip",
-      checksum: "9044e3795620d261099d4354e2f3bafc83e39f2feef375616a953c2cccc06811"),
+      checksum: "4d1a4a98f39742bceb58557a75e36ee50df1fe2b48f3690e5c692a8dbd2e9ad5"),
     .binaryTarget(
       name: "GoogleToolboxForMac",
       url: "https://github.com/zaicodev/google-mlkit-swiftpm/releases/download/v6.0.0/GoogleToolboxForMac.xcframework.zip",
-      checksum: "b6de63a43319fe6c506a7d41f125be784a5229254ceb69073d424ca21953f9fd"),
+      checksum: "c3a5ae7592d943c15747e60d9472e51052108497e7135517d5a149ff66324607"),
     .binaryTarget(
       name: "GoogleUtilitiesComponents",
       url: "https://github.com/zaicodev/google-mlkit-swiftpm/releases/download/v6.0.0/GoogleUtilitiesComponents.xcframework.zip",
-      checksum: "4ca514c93ef7a45d5add64159221d8828a3222e131b38a0a64a9b08c1e8a5f97"),
+      checksum: "0cf6024fb98ea5cd4248e36f2fbed8a49ad58fec06dcd938efa30ea21a160421"),
     .binaryTarget(
       name: "MLKitObjectDetection",
       url: "https://github.com/zaicodev/google-mlkit-swiftpm/releases/download/v6.0.0/MLKitObjectDetection.xcframework.zip",
-      checksum: "cce63b799e6fea39ba6bfe28404e1606ba9b048e37158254b1247bb2ad57f415"),
+      checksum: "ed739d045298226d865baeee31c3503426c834c0b97ddf592d0658f3297f81f6"),
     .binaryTarget(
       name: "MLKitObjectDetectionCommon",
       url: "https://github.com/zaicodev/google-mlkit-swiftpm/releases/download/v6.0.0/MLKitObjectDetectionCommon.xcframework.zip",
-      checksum: "cf9baaa94ce274a85b135456eed192388547442487f6627591ba4d3b70ba719e"),
+      checksum: "e83220c875b1ac915f5a73dffe2a1f5bf10315ec899cea53664f65f5f2c84cda"),
     .binaryTarget(
       name: "MLKitObjectDetectionCustom",
       url: "https://github.com/zaicodev/google-mlkit-swiftpm/releases/download/v6.0.0/MLKitObjectDetectionCustom.xcframework.zip",
-      checksum: "42643f3106650af2f88a56a258f75c49bcd5f459f8e7da8c0df120bdbb485177"),
+      checksum: "1cf48ca2921c82de2ad89dbfc8afedb949974ef9aa52a672022617faff57c7a5"),
     .binaryTarget(
       name: "MLKitTextRecognitionCommon",
       url: "https://github.com/zaicodev/google-mlkit-swiftpm/releases/download/v6.0.0/MLKitTextRecognitionCommon.xcframework.zip",
-      checksum: "b9629c55b37fc0cb0a9b9e89a534e0fcc623c4531bd2fbc0feec0ee63c078ae5"),
+      checksum: "7d33c220771d972e006e4d61eddaa6bffca10a647ff5fdcce97944e1c23c39fd"),
     .binaryTarget(
       name: "MLKitTextRecognitionJapanese",
       url: "https://github.com/zaicodev/google-mlkit-swiftpm/releases/download/v6.0.0/MLKitTextRecognitionJapanese.xcframework.zip",
-      checksum: "3df8358aaadfeaf140a577631c6772e03f1e492914157b896b6a7876ab3221c6"),
+      checksum: "735fc517fd351ba6c12c745c46d4c813058d3c9b8e5641795b6a244a1015f153"),
     .binaryTarget(
       name: "MLKitImageLabelingCommon",
       url: "https://github.com/zaicodev/google-mlkit-swiftpm/releases/download/v6.0.0/MLKitImageLabelingCommon.xcframework.zip",
-      checksum: "97fd5e4025423487049a0c719ec518cf12f4beeaa258991ac24c336865862ecc"),
+      checksum: "e67bc2c28228ea5130ef69d8c014f0b9ac3e18270d42b1fcd7d5497b043bb805"),
     .binaryTarget(
       name: "MLKitVisionKit",
       url: "https://github.com/zaicodev/google-mlkit-swiftpm/releases/download/v6.0.0/MLKitVisionKit.xcframework.zip",
-      checksum: "ddb8e13824880a2ad291289cef6ec7bfe862c5c95987f9f9162530f871410d85"),
+      checksum: "8fba5dea0c34c465a923a74ba2579e0f5ad25c0eb3779abbd12fe4c96384839e"),
     .target(
       name: "Common",
       dependencies: [
