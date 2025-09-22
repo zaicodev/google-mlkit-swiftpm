@@ -4,7 +4,7 @@ import PackageDescription
 
 let package = Package(
   name: "Example",
-  platforms: [.iOS(.v14)],
+  platforms: [.iOS(.v15)],
   products: [
     .library(
       name: "Camera",
@@ -18,8 +18,7 @@ let package = Package(
     .target(
       name: "Camera",
       dependencies: [
-        .product(name: "MLKitBarcodeScanning", package: "google-mlkit-swiftpm"),
-        .product(name: "MLKitFaceDetection", package: "google-mlkit-swiftpm"),
+        .product(name: "MLKitBarcodeScanning", package: "GoogleMLKitSwiftPM"),
         .product(name: "FirebaseCrashlytics", package: "firebase-ios-sdk"),
       ]),
     .testTarget(

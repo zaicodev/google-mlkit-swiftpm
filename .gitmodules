@@ -1,4 +1,4 @@
 [submodule "xcframework-maker"]
-path = xcframework-maker
-url = https://github.com/d-date/xcframework-maker
-branch = minversion
+	path = xcframework-maker
+	url = https://github.com/d-date/xcframework-maker
+	branch = minversion
