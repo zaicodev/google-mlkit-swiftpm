@@ -439,14 +439,88 @@ phase3_build_xcframeworks() {
     show_info "このフェーズは少々時間がかかる場合があります"
 
     # フレームワーク形式の事前確認
-    show_info "フレームワーク形式を事前確認中..."
-    bash scripts/check-framework-types.sh
+    if [ -f "scripts/check-framework-types.sh" ]; then
+        show_info "フレームワーク形式を事前確認中..."
+        bash scripts/check-framework-types.sh
+    fi
+
+    # CocoaPods の依存関係を事前検証
+    show_info "CocoaPods 依存関係を検証中..."
+
+    # pod install を実行してエラーをキャッチ
+    local pod_output=$(pod install 2>&1)
+    local pod_exit_code=$?
+
+    # deployment target エラーをチェック
+    if echo "$pod_output" | grep -q "required a higher minimum deployment target"; then
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        show_error "CocoaPods 依存関係の解決に失敗しました"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "$pod_output" | grep -A 3 "CocoaPods could not find"
+        echo ""
+        echo "対処法:"
+        echo "  1. MLKit ${TARGET_MLKIT_VERSION} の要件を確認:"
+        echo "     pod spec cat GoogleMLKit --version=${TARGET_MLKIT_VERSION} | jq '.platforms'"
+        echo ""
+        echo "  2. Podfile の platform を適切なバージョンに更新"
+        echo ""
+        return 1
+    fi
+
+    if [ $pod_exit_code -ne 0 ]; then
+        show_error "pod install に失敗しました"
+        echo "$pod_output"
+        return 1
+    fi
+
+    show_success "CocoaPods 依存関係の検証完了"
 
     # ビルド実行
     show_info "XCFramework作成を開始..."
     make run
 
-    show_success "XCFrameworkビルド完了"
+    # ビルド後の検証: Podfile.lock から実際にインストールされた MLKit バージョンを確認
+    show_info "ビルド結果を検証中..."
+
+    if [ ! -f "Podfile.lock" ]; then
+        show_error "Podfile.lock が生成されていません"
+        return 1
+    fi
+
+    # MLKitCommon のバージョンを取得して検証
+    local installed_mlkit_common=$(grep "^  - MLKitCommon" Podfile.lock | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+
+    # MLKit のメジャーバージョンから期待される MLKitCommon バージョンを計算
+    # MLKit 6.0.0 → MLKitCommon 11.0.0
+    # MLKit 7.0.0 → MLKitCommon 12.0.0
+    # MLKit 8.0.0 → MLKitCommon 13.0.0
+    # MLKit 9.0.0 → MLKitCommon 14.0.0
+    local mlkit_major=$(echo "${TARGET_MLKIT_VERSION}" | cut -d'.' -f1)
+    local expected_mlkit_common_major=$((mlkit_major + 5))
+
+    echo "  インストールされた MLKitCommon: ${installed_mlkit_common}"
+    echo "  期待される MLKitCommon: ${expected_mlkit_common_major}.x.x"
+
+    # バージョンチェック
+    local installed_major=$(echo "${installed_mlkit_common}" | cut -d'.' -f1)
+
+    if [ "$installed_major" != "$expected_mlkit_common_major" ]; then
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        show_error "MLKit ${TARGET_MLKIT_VERSION} のインストールに失敗しました"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "インストールされた: MLKitCommon ${installed_mlkit_common} (MLKit $(($installed_major - 5)).x 相当)"
+        echo "期待されるバージョン: MLKitCommon ${expected_mlkit_common_major}.x.x (MLKit ${mlkit_major}.x)"
+        echo ""
+        echo "これは通常、Podfile の platform バージョンが不足しているために発生します。"
+        echo ""
+        return 1
+    fi
+
+    show_success "XCFrameworkビルド完了（MLKitCommon ${installed_mlkit_common}）"
 }
 
 # ==================================================
@@ -492,6 +566,9 @@ phase5_update_package_swift() {
     # リリースアセット用のベースURL
     local base_url="https://github.com/zaicodev/google-mlkit-swiftpm/releases/download/${tag}"
 
+    # Python スクリプトから参照できるように export
+    export base_url
+
     # Package.swiftのバックアップ作成
     cp Package.swift Package.swift.backup
 
@@ -508,9 +585,44 @@ phase5_update_package_swift() {
         fi
     done
 
+    # Podfile.lockから依存関係のバージョンを抽出
+    show_info "Podfile.lockから依存関係バージョンを取得中..."
+
+    if [ ! -f "Podfile.lock" ]; then
+        show_error "Podfile.lockが見つかりません"
+        return 1
+    fi
+
+    # 各依存関係のバージョンを抽出
+    GOOGLE_UTILITIES_VERSION=$(grep -A 1 "^  - GoogleUtilities/" Podfile.lock | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+    GOOGLE_DATA_TRANSPORT_VERSION=$(grep "^  - GoogleDataTransport" Podfile.lock | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+    PROMISES_VERSION=$(grep "^  - PromisesObjC" Podfile.lock | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+    GTM_SESSION_FETCHER_VERSION=$(grep "^  - GTMSessionFetcher/" Podfile.lock | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+    NANOPB_VERSION=$(grep "^  - nanopb" Podfile.lock | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+
+    echo "  検出された依存関係バージョン:"
+    echo "    GoogleUtilities: ${GOOGLE_UTILITIES_VERSION}"
+    echo "    GoogleDataTransport: ${GOOGLE_DATA_TRANSPORT_VERSION}"
+    echo "    PromisesObjC: ${PROMISES_VERSION}"
+    echo "    GTMSessionFetcher: ${GTM_SESSION_FETCHER_VERSION}"
+    echo "    nanopb: ${NANOPB_VERSION}"
+
+    # バージョンが取得できているか確認
+    if [ -z "$GOOGLE_UTILITIES_VERSION" ] || [ -z "$GOOGLE_DATA_TRANSPORT_VERSION" ]; then
+        show_error "依存関係のバージョンを取得できませんでした"
+        return 1
+    fi
+
+    # 環境変数としてエクスポート
+    export GOOGLE_UTILITIES_VERSION
+    export GOOGLE_DATA_TRANSPORT_VERSION
+    export PROMISES_VERSION
+    export GTM_SESSION_FETCHER_VERSION
+    export NANOPB_VERSION
+
     # Package.swift更新用のPythonスクリプトを生成して実行
-    show_info "Package.swiftのバイナリターゲット更新中..."
-    python3 <<EOF
+    show_info "Package.swiftのバイナリターゲットと依存関係を更新中..."
+    python3 <<'PYTHON_EOF'
 import re
 import sys
 import os
@@ -537,6 +649,47 @@ checksums = {
     'MLKitVisionKit': os.environ.get('CHECKSUM_MLKitVisionKit', '')
 }
 
+# 依存関係のバージョンを環境変数から取得
+google_utils_ver = os.environ.get('GOOGLE_UTILITIES_VERSION', '7.13.2')
+google_dt_ver = os.environ.get('GOOGLE_DATA_TRANSPORT_VERSION', '9.4.0')
+promises_ver = os.environ.get('PROMISES_VERSION', '2.4.0')
+gtm_ver = os.environ.get('GTM_SESSION_FETCHER_VERSION', '3.4.1')
+nanopb_ver = os.environ.get('NANOPB_VERSION', '2.30910.0')
+
+# バージョン範囲を計算する関数
+def calc_version_range(version_str):
+    """
+    バージョン文字列から適切な範囲を計算
+    例: "8.1.0" -> ("8.1.0", "9.0.0")
+    """
+    parts = version_str.split('.')
+    major = int(parts[0])
+    minor = int(parts[1]) if len(parts) > 1 else 0
+
+    # メジャーバージョンの次の値を上限とする
+    upper_major = major + 1
+
+    return (version_str, f"{upper_major}.0.0")
+
+# 各依存関係のバージョン範囲を計算
+google_utils_range = calc_version_range(google_utils_ver)
+google_dt_range = calc_version_range(google_dt_ver)
+promises_range = calc_version_range(promises_ver)
+
+# GTMSessionFetcher は少し広めの範囲を許容
+gtm_parts = gtm_ver.split('.')
+gtm_major = int(gtm_parts[0])
+gtm_range = (gtm_ver, "6.0.0")  # Firebaseが要求する範囲
+
+# nanopb は狭い範囲
+# 例: 2.30910.0 → 2.30910.0..<2.30911.0
+nanopb_parts = nanopb_ver.split('.')
+nanopb_middle = int(nanopb_parts[1]) if len(nanopb_parts) > 1 else 30910
+nanopb_range = (nanopb_ver, f"2.{nanopb_middle + 1}.0")
+
+# URLを環境変数から取得
+base_url = os.environ.get('base_url', '')
+
 # URLパターンとチェックサムを更新
 for framework_name, checksum in checksums.items():
     # binaryTarget定義を探して更新
@@ -544,24 +697,55 @@ for framework_name, checksum in checksums.items():
 
     def replacer(match):
         # 正式なリリースURL
-        new_url = f"${base_url}/{framework_name}.xcframework.zip"
+        new_url = f"{base_url}/{framework_name}.xcframework.zip"
         return match.group(1) + new_url + match.group(3) + checksum + match.group(5)
 
     content = re.sub(pattern, replacer, content, flags=re.DOTALL)
+
+# dependencies セクションを更新
+print(f"  依存関係を更新中...")
+print(f"    GoogleUtilities: {google_utils_range[0]}..<{google_utils_range[1]}")
+print(f"    GoogleDataTransport: {google_dt_range[0]}..<{google_dt_range[1]}")
+print(f"    Promises: {promises_range[0]}..<{promises_range[1]}")
+print(f"    GTMSessionFetcher: {gtm_range[0]}..<{gtm_range[1]}")
+print(f"    nanopb: {nanopb_range[0]}..<{nanopb_range[1]}")
+
+# dependencies セクション全体を新しいバージョン範囲に置き換え
+# パッケージレベルの dependencies だけを対象にする（products の後、targets の前）
+dependencies_pattern = r'(products:.*?\],\s*)dependencies:\s*\[(.*?)\],(\s*targets:)'
+
+def replace_dependencies(match):
+    new_deps = f'''{match.group(1)}dependencies: [
+    .package(url: "https://github.com/google/promises.git", "{promises_range[0]}"..<"{promises_range[1]}"),
+    .package(url: "https://github.com/google/GoogleDataTransport.git", "{google_dt_range[0]}"..<"{google_dt_range[1]}"),
+    .package(url: "https://github.com/google/GoogleUtilities.git", "{google_utils_range[0]}"..<"{google_utils_range[1]}"),
+    .package(url: "https://github.com/google/gtm-session-fetcher.git", "{gtm_range[0]}"..<"{gtm_range[1]}"),
+    .package(url: "https://github.com/firebase/nanopb.git", "{nanopb_range[0]}"..<"{nanopb_range[1]}"),
+  ],{match.group(3)}'''
+    return new_deps
+
+content = re.sub(dependencies_pattern, replace_dependencies, content, flags=re.DOTALL)
 
 # Package.swiftを書き戻す
 with open('Package.swift', 'w') as f:
     f.write(content)
 
-print("✅ Package.swiftのチェックサム更新完了")
-EOF
+print("✅ Package.swift更新完了")
+PYTHON_EOF
 
     # 検証
     show_info "Package.swift検証中..."
+
+    # デバッグ: 更新後の dependencies セクションを表示
+    echo "  更新後の dependencies:"
+    grep -A 6 "dependencies:" Package.swift | head -10
+
     if swift package dump-package >/dev/null 2>&1; then
         show_success "Package.swift更新完了"
     else
         show_error "Package.swiftの検証に失敗しました"
+        echo "  詳細なエラー:"
+        swift package dump-package 2>&1 | head -20
         # バックアップから復元
         mv Package.swift.backup Package.swift
         return 1
